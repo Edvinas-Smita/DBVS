@@ -1,0 +1,91 @@
+DROP TABLE IF EXISTS nuomos_imones;
+DROP TABLE IF EXISTS nuomos_punktai;
+DROP TABLE IF EXISTS darbuotojai;
+DROP TABLE IF EXISTS adresai;
+DROP TABLE IF EXISTS idarbinimas;
+DROP TABLE IF EXISTS vaizdo_irasai;
+DROP TABLE IF EXISTS klientai;
+DROP TABLE IF EXISTS mokejimai;
+DROP TABLE IF EXISTS isnuomavimai;
+DROP TABLE IF EXISTS iraso_nuomos;
+
+CREATE TABLE nuomos_imones(
+	imones_valstybinis_nr	SERIAL		NOT NULL,
+	imones_pavadinimas	VARCHAR(50)	NOT NULL,
+	PRIMARY KEY(imones_valstybinis_nr)
+);
+
+CREATE TABLE adresai(
+	adreso_id	SERIAL		NOT NULL,
+	salis		VARCHAR(50)	NOT NULL,
+	valstyja	VARCHAR(50),
+	miestas		VARCHAR(50)	NOT NULL,
+	gatve		VARCHAR(50)	NOT NULL,
+	gatves_nr	SMALLINT	NOT NULL,
+	PRIMARY KEY(adreso_id)
+);
+
+CREATE TABLE nuomos_punktai(
+	punkto_id	SERIAL	NOT NULL,
+	ref_imones_nr	INTEGER	NOT NULL,
+	ref_adreso_id	INTEGER	NOT NULL,
+	PRIMARY KEY(punkto_id),
+	CONSTRAINT punkto_imone_fk
+		FOREIGN KEY(ref_imones_nr)
+		REFERENCES nuomos_imones(imones_valstybinis_nr)
+		MATCH SIMPLE
+		ON UPDATE RESTRICT
+		ON DELETE RESTRICT,
+	CONSTRAINT punkto_adresas_fk
+		FOREIGN KEY(ref_adreso_id)
+		REFERENCES adresai(adreso_id)
+		MATCH SIMPLE
+		ON UPDATE RESTRICT
+		ON DELETE RESTRICT
+);
+
+CREATE TABLE darbuotojai(
+	asmens_kodas	BIGINT		NOT NULL,
+	vardas		VARCHAR(50)	NOT NULL,
+	pavarde		VARCHAR(50)	NOT NULL,
+	PRIMARY KEY(asmens_kodas)
+);
+
+CREATE TABLE idarbinimas(
+	darbuotojo_ak	BIGINT	NOT NULL,
+	punkto_id	INTEGER	NOT NULL,
+	PRIMARY KEY(darbuotojo_ak),
+	PRIMARY KEY(punkto_id),
+	CONSTRAINT darbuotojo_ak_fk
+		FOREIGN KEY(darbuotojo_ak)
+		REFERENCES darbuotojai(asmens_kodas)
+		MATCH SIMPLE
+		ON UPDATE RESTRICT
+		ON DELETE RESTRICT,
+	CONSTRAINT darboviete_fk
+		FOREIGN KEY(punkto_id)
+		REFERENCES nuomos_punktai(punkto_id)
+		MATCH SIMPLE
+		ON UPDATE RESTRICT
+		ON DELETE RESTRICT
+);
+
+CREATE TABLE klientai(
+	email		VARCHAR(50)	NOT NULL,
+	vardas		VARCHAR(50),
+	pavarde		VARCHAR(50),
+	kreditine	BIGINT,
+	velavimas	MONEY,
+	PRIMARY KEY(email)
+);
+
+CREATE TABLE mokejimai(
+	mokejimo_id	BIGSERIAL	NOT NULL,
+	visa_kaina	MONEY		NOT NULL,
+	nuolaida	SMALLINT,
+	delspinigiai	MONEY,	--nuo kliento velavimo skolos atskaiciuotas minimalus %, be kurio neleidziama daugiau nuomotis
+	kaina		MONEY		NOT NULL,	--visa kaina su nuolaida ir delspinigiais
+	sumoketa	MONEY		NOT NULL,	--klientas turi sumoketi kaina, ir, jei turi skola ir nori ja mazinti, gali moketi daugiau ir tada mazes skola, bet skola negali but <0
+	graza		MONEY,	--jei mokejimas virsijo kaina ir: klientas nenorejo mazinti skolos, norejo ne visais pinigais mazinti skola, arba likutis po to, kai skola pasieke 0
+	PRIMARY KEY(mokejimo_id)
+);
